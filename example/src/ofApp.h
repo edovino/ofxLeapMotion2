@@ -26,4 +26,5 @@ public:
     
 	vector <int> fingersFound;
 	ofEasyCam cam;
+    ofLight pointLight;
 };
