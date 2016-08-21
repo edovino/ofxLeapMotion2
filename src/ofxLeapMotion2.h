@@ -77,8 +77,29 @@ public:
     
     // TODO: adding leap gesture support - JRW
     int iGestures;
+    
+    // swipe data
+    float swipeSpeed;
+    float swipeDurationSeconds;
+    int64_t swipeDurationMicros;
+    
+    // circle data
+    float circleProgress;
+    float circleRadius;
+    ofPoint circleCenter;
+    ofVec3f circleNormal;
+    
+    //key tap
+    ofPoint keyTapPosition;
+    
+    // screen tap
+    ofPoint  screenTapPosition;
+    ofVec3f screenTapDirection;
+
 	
-    ofxLeapMotion(){
+    ofxLeapMotion():swipeSpeed(0)
+    ,swipeDurationSeconds(0)
+    ,swipeDurationMicros(0) {
         reset();
         resetMapping();
         ourController = new Leap::Controller();
@@ -134,101 +155,107 @@ public:
         
         Leap::Frame frame = ourController->frame();
         
-        if (lastFrame == frame) {
+        if(lastFrame == frame){
             return;
         }
         
-        Leap::GestureList gestures = lastFrame.isValid()    ?
-        frame.gestures(lastFrame) :
-        frame.gestures();
+        Leap::GestureList gestures = lastFrame.isValid() ? frame.gestures(lastFrame) : frame.gestures();
         
         lastFrame = frame;
         
         size_t numGestures = gestures.count();
         
-        for (size_t i=0; i < numGestures; i++) {
+        for(size_t i=0; i < numGestures; i++){
             
             // screen tap gesture (forward poke / tap)
-            if (gestures[i].type() == Leap::Gesture::TYPE_SCREEN_TAP) {
+            if(gestures[i].type() == Leap::Gesture::TYPE_SCREEN_TAP){
                 Leap::ScreenTapGesture tap = gestures[i];
-                ofVec3f tapLoc = getMappedofPoint(tap.position());
+                
+                screenTapPosition = getMappedofPoint(tap.position());   // screen tap gesture data = tap position
+                screenTapDirection = getofPoint(tap.direction());       // screen tap gesture data = tap direction
                 
                 iGestures = 1;
-                
             }
             
             // key tap gesture (down tap)
-            else if (gestures[i].type() == Leap::Gesture::TYPE_KEY_TAP) {
+            else if(gestures[i].type() == Leap::Gesture::TYPE_KEY_TAP){
                 Leap::KeyTapGesture tap = gestures[i];
                 
-                iGestures = 2;
+                keyTapPosition = getofPoint(tap.position());            // key tap gesture data = tap position
                 
+                iGestures = 2;
             }
             
             // swipe gesture
-            else if (gestures[i].type() == Leap::Gesture::TYPE_SWIPE) {
+            else if(gestures[i].type() == Leap::Gesture::TYPE_SWIPE){
                 Leap::SwipeGesture swipe = gestures[i];
                 Leap::Vector diff = 0.04f*(swipe.position() - swipe.startPosition());
                 ofVec3f curSwipe(diff.x, -diff.y, diff.z);
                 
                 // swipe left
-                if (curSwipe.x < -3 && curSwipe.x > -20) {
+                if(curSwipe.x < -3 && curSwipe.x > -20){
                     iGestures = 4;
                 }
                 // swipe right
-                else if (curSwipe.x > 3 && curSwipe.x < 20) {
+                else if(curSwipe.x > 3 && curSwipe.x < 20){
                     iGestures = 3;
                 }
                 // swipe up
-                if (curSwipe.y < -3 && curSwipe.y > -20) {
+                if(curSwipe.y < -3 && curSwipe.y > -20){
                     iGestures = 6;
                 }
                 // swipe down
-                else if (curSwipe.y > 3 && curSwipe.y < 20) {
+                else if(curSwipe.y > 3 && curSwipe.y < 20){
                     iGestures = 5;
                 }
                 
                 // 3D swiping
                 // swipe forward
-                if (curSwipe.z < -5) {
+                if(curSwipe.z < -5){
                     iGestures = 7;
                 }
                 // swipe back
-                else if (curSwipe.z > 5) {
+                else if(curSwipe.z > 5){
                     iGestures = 8;
                 }
+                
+                // more swipe gesture data
+                swipeSpeed = swipe.speed();                             // swipe speed in mm/s
+                swipeDurationSeconds = swipe.durationSeconds();         // swipe duration in seconds
+                swipeDurationMicros = swipe.duration();                 // swipe duration in micros
+                swipe.position();
             }
             
             // circle gesture
-            else if (gestures[i].type() == Leap::Gesture::TYPE_CIRCLE) {
+            else if(gestures[i].type() == Leap::Gesture::TYPE_CIRCLE){
                 Leap::CircleGesture circle = gestures[i];
-                float progress = circle.progress();
+                circleProgress = circle.progress();                     // circle progress
                 
-                if (progress >= 1.0f) {
+                if(circleProgress >= 1.0f){
                     
-                    ofVec3f center = getMappedofPoint(circle.center());
-                    ofVec3f normal(circle.normal().x, circle.normal().y, circle.normal().z);
+                    circleCenter = getMappedofPoint(circle.center());                           // changed to global
+                    circleNormal.set(circle.normal().x, circle.normal().y, circle.normal().z);  // changed to global
+                    
                     double curAngle = 6.5;
-                    if (normal.z < 0) {
+                    if(circleNormal.z < 0){
                         curAngle *= -1;
                     }
                     
-                    if (curAngle < 0) {
+                    if(curAngle < 0){
                         // clockwise rotation
                         iGestures = 10;
                     }
-                    else {
+                    else{
                         // counter-clockwise rotation
                         iGestures = 9;
                     }
                 }
-                
             }
             
             // kill gesture when done
             // gestures 5 & 6 are always in a STATE_STOP so we exclude
-            if (gestures[i].type() != 5 && gestures[i].type() != 6) {
-                if (gestures[i].state() == Leap::Gesture::STATE_STOP) {
+            if(gestures[i].type() != 5 && gestures[i].type() != 6){
+                if(gestures[i].state() == Leap::Gesture::STATE_STOP){
                     iGestures = 0;
                 }
             }
