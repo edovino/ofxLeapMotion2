@@ -24,6 +24,7 @@ public:
     ofPoint handPos;
     ofPoint handNormal;
     ofPoint direction;
+    ofPoint palmVel;
     float pitch, yaw, roll;
     bool isLeft;
     float grabStrength;
@@ -325,6 +326,7 @@ public:
             curHand.yaw         = leapHands[i].direction().yaw();
             curHand.roll        = leapHands[i].palmNormal().roll();
             curHand.pitch       = leapHands[i].direction().pitch();
+            curHand.palmVel     = getofPoint(leapHands[i].palmVelocity());
             
             /// eloi addittion
             curHand.grabStrength    = leapHands[i].grabStrength();
