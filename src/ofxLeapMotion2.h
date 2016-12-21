@@ -26,6 +26,8 @@ public:
     ofPoint direction;
     float pitch, yaw, roll;
     bool isLeft;
+    float grabStrength;
+    float pinchStrength;
     
     void debugDraw(){
         ofPushStyle();
@@ -53,7 +55,9 @@ public:
 #endif
         ofPopMatrix();
 
+        ofDrawAxis(1000);
         ofDrawArrow(handPos, fingers[THUMB].pos, 10);
+        
         ofDrawArrow(handPos, fingers[INDEX].pos, 10);
         ofDrawArrow(handPos, fingers[MIDDLE].pos, 10);
         ofDrawArrow(handPos, fingers[RING].pos, 10);
@@ -276,7 +280,6 @@ public:
         
         return handsCopy;
     }
-    
     //--------------------------------------------------------------
     vector <ofxLeapMotionSimpleHand> getSimpleHands(){
 		
@@ -288,13 +291,18 @@ public:
 
             curHand.isLeft      = leapHands[i].isLeft();
             
-            curHand.handPos     = getMappedofPoint( leapHands[i].palmPosition() );
+            curHand.handPos     = getMappedofPoint( leapHands[i].stabilizedPalmPosition() );
             curHand.handNormal  = getofPoint( leapHands[i].palmNormal() );
             curHand.direction   = getofPoint( leapHands[i].direction() );
             
             curHand.yaw         = leapHands[i].direction().yaw();
             curHand.roll        = leapHands[i].palmNormal().roll();
             curHand.pitch       = leapHands[i].direction().pitch();
+            
+            /// eloi addittion
+            curHand.grabStrength    = leapHands[i].grabStrength();
+            curHand.pinchStrength    = leapHands[i].pinchStrength();
+            
             
             fingerType fingerTypes[] = {THUMB, INDEX, MIDDLE, RING, PINKY};
             for(int j = 0; j < 5; j++) {
